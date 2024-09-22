@@ -106,7 +106,7 @@ func UpdateUser(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(err.Error())
 	}
 
-	user, err := config.DB.EditUser(c.Context(), database.EditUserParams{Username: userInfo.Username, Email: userInfo.Email, Password: hashedPassword, ID: id})
+	user, err := config.DB.EditUser(c.Context(), database.EditUserParams{Username: userInfo.Username, Email: userInfo.Email, Password: hashedPassword})
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(err.Error())
 	}

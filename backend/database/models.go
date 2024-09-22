@@ -6,9 +6,83 @@ package database
 
 import (
 	"database/sql"
+	"database/sql/driver"
+	"fmt"
+	"time"
 
 	"github.com/google/uuid"
 )
+
+type SenderType string
+
+const (
+	SenderTypeBot  SenderType = "bot"
+	SenderTypeUser SenderType = "user"
+)
+
+func (e *SenderType) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = SenderType(s)
+	case string:
+		*e = SenderType(s)
+	default:
+		return fmt.Errorf("unsupported scan type for SenderType: %T", src)
+	}
+	return nil
+}
+
+type NullSenderType struct {
+	SenderType SenderType
+	Valid      bool // Valid is true if SenderType is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullSenderType) Scan(value interface{}) error {
+	if value == nil {
+		ns.SenderType, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.SenderType.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullSenderType) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.SenderType), nil
+}
+
+type Conversation struct {
+	ID        uuid.UUID
+	StartedAt time.Time
+	UserID    uuid.UUID
+	EndedAt   sql.NullTime
+}
+
+type Document struct {
+	ID         uuid.UUID
+	FilePath   string
+	UploadedAt sql.NullTime
+	UploadedBy uuid.UUID
+}
+
+type ExtractedContent struct {
+	ID         uuid.UUID
+	DocumentID uuid.UUID
+	Content    string
+	CreatedAt  time.Time
+}
+
+type Message struct {
+	ID             uuid.UUID
+	ConversationID uuid.UUID
+	Content        string
+	Sender         SenderType
+	CreatedAt      time.Time
+}
 
 type User struct {
 	ID        uuid.UUID
