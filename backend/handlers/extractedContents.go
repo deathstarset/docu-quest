@@ -8,19 +8,29 @@ import (
 	"github.com/google/uuid"
 )
 
-type createExtractedContent struct {
+type ICreateExtractedContent struct {
 	DocumentID uuid.UUID `json:"document_id"`
-	Content    string    `json:"content"`
 }
 
 func CreateExtractedContent(c *fiber.Ctx) error {
-	var extractedContentInfo createExtractedContent
+	var extractedContentInfo ICreateExtractedContent
+
 	err := c.BodyParser(&extractedContentInfo)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(err.Error())
 	}
 
-	extractedContent, err := config.DB.AddExtractedContent(c.Context(), database.AddExtractedContentParams(extractedContentInfo))
+	document, err := config.DB.FindDocumentByID(c.Context(), extractedContentInfo.DocumentID)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(err.Error())
+	}
+
+	content, err := utils.ParsePdf(document.FilePath)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(err.Error())
+	}
+
+	extractedContent, err := config.DB.AddExtractedContent(c.Context(), database.AddExtractedContentParams{DocumentID: extractedContentInfo.DocumentID, Content: content})
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(err.Error())
 	}

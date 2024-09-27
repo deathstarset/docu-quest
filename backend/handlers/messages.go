@@ -7,14 +7,14 @@ import (
 	"github.com/google/uuid"
 )
 
-type createMessage struct {
+type ICreateMessage struct {
 	ConversationID uuid.UUID           `json:"conversation_id"`
 	Content        string              `json:"content"`
 	Sender         database.SenderType `json:"sender"`
 }
 
 func CreateMessage(c *fiber.Ctx) error {
-	var messageInfo createMessage
+	var messageInfo ICreateMessage
 
 	err := c.BodyParser(&messageInfo)
 	if err != nil {

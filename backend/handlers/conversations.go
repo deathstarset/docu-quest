@@ -2,23 +2,26 @@ package handlers
 
 import (
 	"github.com/deathstarset/backend-docu-quest/config"
+	"github.com/deathstarset/backend-docu-quest/database"
+	"github.com/deathstarset/backend-docu-quest/utils"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 )
 
-type createConversation struct {
-	UserID uuid.UUID `json:"user_id"`
+type ICreateConversation struct {
+	UserID     uuid.UUID `json:"user_id"`
+	DocumentID uuid.UUID `json:"document_id"`
 }
 
 func CreateConversation(c *fiber.Ctx) error {
-	var conversationInfo createConversation
+	var conversationInfo ICreateConversation
 
 	err := c.BodyParser(&conversationInfo)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(err.Error())
 	}
 
-	conversation, err := config.DB.AddConversation(c.Context(), conversationInfo.UserID)
+	conversation, err := config.DB.AddConversation(c.Context(), database.AddConversationParams(conversationInfo))
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(err.Error())
 	}
@@ -50,8 +53,7 @@ func GetConversations(c *fiber.Ctx) error {
 
 func DeleteConversation(c *fiber.Ctx) error {
 	idStr := c.Params("id")
-	var id uuid.UUID
-	err := id.UnmarshalText([]byte(idStr))
+	id, err := utils.TextToUUID(idStr)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(err.Error())
 	}

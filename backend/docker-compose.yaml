@@ -1,7 +1,9 @@
 services:
   docu-quest-db:
     container_name: docu-quest-db
-    image: postgres:alpine
+    build:
+      context: .
+      dockerfile: Dockerfile
     restart: always
     ports:
       - "5432:5432"

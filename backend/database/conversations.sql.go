@@ -12,23 +12,29 @@ import (
 )
 
 const addConversation = `-- name: AddConversation :one
-INSERT INTO conversations (user_id) VALUES ($1) RETURNING id, started_at, user_id, ended_at
+INSERT INTO conversations (user_id, document_id) VALUES ($1, $2) RETURNING id, started_at, user_id, ended_at, document_id
 `
 
-func (q *Queries) AddConversation(ctx context.Context, userID uuid.UUID) (Conversation, error) {
-	row := q.db.QueryRowContext(ctx, addConversation, userID)
+type AddConversationParams struct {
+	UserID     uuid.UUID
+	DocumentID uuid.UUID
+}
+
+func (q *Queries) AddConversation(ctx context.Context, arg AddConversationParams) (Conversation, error) {
+	row := q.db.QueryRowContext(ctx, addConversation, arg.UserID, arg.DocumentID)
 	var i Conversation
 	err := row.Scan(
 		&i.ID,
 		&i.StartedAt,
 		&i.UserID,
 		&i.EndedAt,
+		&i.DocumentID,
 	)
 	return i, err
 }
 
 const findConversationByID = `-- name: FindConversationByID :one
-SELECT id, started_at, user_id, ended_at FROM conversations WHERE id = $1 LIMIT 1
+SELECT id, started_at, user_id, ended_at, document_id FROM conversations WHERE id = $1 LIMIT 1
 `
 
 func (q *Queries) FindConversationByID(ctx context.Context, id uuid.UUID) (Conversation, error) {
@@ -39,12 +45,13 @@ func (q *Queries) FindConversationByID(ctx context.Context, id uuid.UUID) (Conve
 		&i.StartedAt,
 		&i.UserID,
 		&i.EndedAt,
+		&i.DocumentID,
 	)
 	return i, err
 }
 
 const findConversations = `-- name: FindConversations :many
-SELECT id, started_at, user_id, ended_at FROM conversations ORDER BY started_at
+SELECT id, started_at, user_id, ended_at, document_id FROM conversations ORDER BY started_at
 `
 
 func (q *Queries) FindConversations(ctx context.Context) ([]Conversation, error) {
@@ -61,6 +68,7 @@ func (q *Queries) FindConversations(ctx context.Context) ([]Conversation, error)
 			&i.StartedAt,
 			&i.UserID,
 			&i.EndedAt,
+			&i.DocumentID,
 		); err != nil {
 			return nil, err
 		}
@@ -76,7 +84,7 @@ func (q *Queries) FindConversations(ctx context.Context) ([]Conversation, error)
 }
 
 const findConversationsByUserID = `-- name: FindConversationsByUserID :many
-SELECT id, started_at, user_id, ended_at FROM conversations WHERE user_id = $1
+SELECT id, started_at, user_id, ended_at, document_id FROM conversations WHERE user_id = $1
 `
 
 func (q *Queries) FindConversationsByUserID(ctx context.Context, userID uuid.UUID) ([]Conversation, error) {
@@ -93,6 +101,7 @@ func (q *Queries) FindConversationsByUserID(ctx context.Context, userID uuid.UUI
 			&i.StartedAt,
 			&i.UserID,
 			&i.EndedAt,
+			&i.DocumentID,
 		); err != nil {
 			return nil, err
 		}
@@ -107,11 +116,47 @@ func (q *Queries) FindConversationsByUserID(ctx context.Context, userID uuid.UUI
 	return items, nil
 }
 
+const findUserConversation = `-- name: FindUserConversation :one
+SELECT id, started_at, user_id, ended_at, document_id FROM conversations WHERE id = $1 AND user_id = $2 LIMIT 1
+`
+
+type FindUserConversationParams struct {
+	ID     uuid.UUID
+	UserID uuid.UUID
+}
+
+func (q *Queries) FindUserConversation(ctx context.Context, arg FindUserConversationParams) (Conversation, error) {
+	row := q.db.QueryRowContext(ctx, findUserConversation, arg.ID, arg.UserID)
+	var i Conversation
+	err := row.Scan(
+		&i.ID,
+		&i.StartedAt,
+		&i.UserID,
+		&i.EndedAt,
+		&i.DocumentID,
+	)
+	return i, err
+}
+
 const removeConversation = `-- name: RemoveConversation :exec
 DELETE FROM conversations WHERE id = $1
 `
 
 func (q *Queries) RemoveConversation(ctx context.Context, id uuid.UUID) error {
 	_, err := q.db.ExecContext(ctx, removeConversation, id)
+	return err
+}
+
+const removeUserConversation = `-- name: RemoveUserConversation :exec
+DELETE FROM conversations WHERE id = $1 AND user_id = $2
+`
+
+type RemoveUserConversationParams struct {
+	ID     uuid.UUID
+	UserID uuid.UUID
+}
+
+func (q *Queries) RemoveUserConversation(ctx context.Context, arg RemoveUserConversationParams) error {
+	_, err := q.db.ExecContext(ctx, removeUserConversation, arg.ID, arg.UserID)
 	return err
 }

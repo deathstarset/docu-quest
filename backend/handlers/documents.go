@@ -10,7 +10,7 @@ import (
 	"github.com/google/uuid"
 )
 
-type createDocument struct {
+type ICreateDocument struct {
 	FilePath   string    `json:"file_path"`
 	UploadedBy uuid.UUID `json:"uploaded_by"`
 }
@@ -25,7 +25,7 @@ func CreateDocument(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(err.Error())
 	}
-	documentInfo := createDocument{
+	documentInfo := ICreateDocument{
 		FilePath:   dest,
 		UploadedBy: uploadedByUUID,
 	}

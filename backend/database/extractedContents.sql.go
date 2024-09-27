@@ -7,6 +7,8 @@ package database
 
 import (
 	"context"
+	"database/sql"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -80,11 +82,61 @@ func (q *Queries) FindExtractedContents(ctx context.Context) ([]ExtractedContent
 	return items, nil
 }
 
+const findUserExtractedContentByID = `-- name: FindUserExtractedContentByID :one
+SELECT extracted_contents.id, document_id, content, created_at, documents.id, file_path, uploaded_at, uploaded_by FROM extracted_contents JOIN documents ON extracted_contents.document_id = documents.id WHERE documents.uploaded_by = $1 AND extracted_contents.id = $2
+`
+
+type FindUserExtractedContentByIDParams struct {
+	UploadedBy uuid.UUID
+	ID         uuid.UUID
+}
+
+type FindUserExtractedContentByIDRow struct {
+	ID         uuid.UUID
+	DocumentID uuid.UUID
+	Content    string
+	CreatedAt  time.Time
+	ID_2       uuid.UUID
+	FilePath   string
+	UploadedAt sql.NullTime
+	UploadedBy uuid.UUID
+}
+
+func (q *Queries) FindUserExtractedContentByID(ctx context.Context, arg FindUserExtractedContentByIDParams) (FindUserExtractedContentByIDRow, error) {
+	row := q.db.QueryRowContext(ctx, findUserExtractedContentByID, arg.UploadedBy, arg.ID)
+	var i FindUserExtractedContentByIDRow
+	err := row.Scan(
+		&i.ID,
+		&i.DocumentID,
+		&i.Content,
+		&i.CreatedAt,
+		&i.ID_2,
+		&i.FilePath,
+		&i.UploadedAt,
+		&i.UploadedBy,
+	)
+	return i, err
+}
+
 const removeExtractedContent = `-- name: RemoveExtractedContent :exec
 DELETE FROM extracted_contents WHERE id = $1
 `
 
 func (q *Queries) RemoveExtractedContent(ctx context.Context, id uuid.UUID) error {
 	_, err := q.db.ExecContext(ctx, removeExtractedContent, id)
+	return err
+}
+
+const removeUserExtractedContent = `-- name: RemoveUserExtractedContent :exec
+DELETE FROM extracted_contents USING documents WHERE extracted_contents.document_id = documents.id AND documents.uploaded_by = $1 AND extracted_contents.id = $2
+`
+
+type RemoveUserExtractedContentParams struct {
+	UploadedBy uuid.UUID
+	ID         uuid.UUID
+}
+
+func (q *Queries) RemoveUserExtractedContent(ctx context.Context, arg RemoveUserExtractedContentParams) error {
+	_, err := q.db.ExecContext(ctx, removeUserExtractedContent, arg.UploadedBy, arg.ID)
 	return err
 }
