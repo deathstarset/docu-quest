@@ -80,7 +80,7 @@ func DeleteUser(c *fiber.Ctx) error {
 	return c.SendStatus(fiber.StatusOK)
 }
 
-type updateUser struct {
+type IUpdateUser struct {
 	Username string `json:"username"`
 	Email    string `json:"email"`
 	Password string `json:"password"`
@@ -88,7 +88,7 @@ type updateUser struct {
 
 // solve the update problem
 func UpdateUser(c *fiber.Ctx) error {
-	var userInfo updateUser
+	var userInfo IUpdateUser
 	err := c.BodyParser(&userInfo)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(err.Error())

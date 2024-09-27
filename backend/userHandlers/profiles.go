@@ -1,8 +1,9 @@
-package handlers
+package userhandlers
 
 import (
 	"github.com/deathstarset/backend-docu-quest/config"
 	"github.com/deathstarset/backend-docu-quest/database"
+	"github.com/deathstarset/backend-docu-quest/handlers"
 	"github.com/deathstarset/backend-docu-quest/utils"
 	"github.com/gofiber/fiber/v2"
 )
@@ -54,7 +55,7 @@ func UpdateProfile(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(err.Error())
 	}
 
-	var userInfo updateUser
+	var userInfo handlers.IUpdateUser
 	err = c.BodyParser(&userInfo)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(err.Error())

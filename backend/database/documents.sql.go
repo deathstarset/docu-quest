@@ -112,11 +112,46 @@ func (q *Queries) FindDocumentsByUserID(ctx context.Context, uploadedBy uuid.UUI
 	return items, nil
 }
 
+const findUserDocumentByID = `-- name: FindUserDocumentByID :one
+SELECT id, file_path, uploaded_at, uploaded_by FROM documents WHERE id = $1 AND uploaded_by = $2 LIMIT 1
+`
+
+type FindUserDocumentByIDParams struct {
+	ID         uuid.UUID
+	UploadedBy uuid.UUID
+}
+
+func (q *Queries) FindUserDocumentByID(ctx context.Context, arg FindUserDocumentByIDParams) (Document, error) {
+	row := q.db.QueryRowContext(ctx, findUserDocumentByID, arg.ID, arg.UploadedBy)
+	var i Document
+	err := row.Scan(
+		&i.ID,
+		&i.FilePath,
+		&i.UploadedAt,
+		&i.UploadedBy,
+	)
+	return i, err
+}
+
 const removeDocument = `-- name: RemoveDocument :exec
 DELETE FROM documents WHERE id = $1
 `
 
 func (q *Queries) RemoveDocument(ctx context.Context, id uuid.UUID) error {
 	_, err := q.db.ExecContext(ctx, removeDocument, id)
+	return err
+}
+
+const removeUserDocument = `-- name: RemoveUserDocument :exec
+DELETE FROM documents WHERE id = $1 AND uploaded_by = $2
+`
+
+type RemoveUserDocumentParams struct {
+	ID         uuid.UUID
+	UploadedBy uuid.UUID
+}
+
+func (q *Queries) RemoveUserDocument(ctx context.Context, arg RemoveUserDocumentParams) error {
+	_, err := q.db.ExecContext(ctx, removeUserDocument, arg.ID, arg.UploadedBy)
 	return err
 }
